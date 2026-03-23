@@ -5,7 +5,7 @@ require("dotenv").config();
 const routes = require("./routes");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors());
@@ -22,6 +22,8 @@ app.get("/", (req, res) => {
         version: "1.0.0",
         endpoints: {
             health: "/api/health",
+            login: "POST /api/auth/login",
+            signup: "POST /api/auth/signup",
             getData: "GET /api/data/:table",
             insertData: "POST /api/data/:table",
             updateData: "PUT /api/data/:table/:id",

@@ -1,6 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const supabase = require("../config/supabase");
+const authRouter = require("./auth");
+
+// Mount auth routes
+router.use("/auth", authRouter);
 
 // Health check route
 router.get("/health", (req, res) => {
