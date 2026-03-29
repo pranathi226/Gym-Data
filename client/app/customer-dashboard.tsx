@@ -39,7 +39,7 @@ export default function CustomerDashboard() {
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
             <Text style={styles.statValue}>Chest Day</Text>
-            <Text style={styles.statLabel}>Today's Focus</Text>
+            <Text style={styles.statLabel}>Today’s Focus</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.statBox}>
@@ -53,7 +53,7 @@ export default function CustomerDashboard() {
         {/* Workout Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Today's Workout</Text>
+            <Text style={styles.sectionTitle}>Today’s Workout</Text>
             <TouchableOpacity>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
@@ -78,7 +78,7 @@ export default function CustomerDashboard() {
         {/* Diet Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Today's Diet Plan</Text>
+            <Text style={styles.sectionTitle}>Today’s Diet Plan</Text>
             <TouchableOpacity>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>

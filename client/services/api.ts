@@ -7,15 +7,8 @@ function getBaseUrl(): string {
     return 'http://localhost:5001';
   }
 
-  // On mobile (iOS/Android), get the dev machine's IP from Expo
-  const debuggerHost = Constants.expoConfig?.hostUri ?? Constants.manifest2?.extra?.expoGo?.debuggerHost;
-  if (debuggerHost) {
-    const ip = debuggerHost.split(':')[0];
-    return `http://${ip}:5001`;
-  }
-
-  // Fallback
-  return 'http://localhost:5001';
+  // On mobile (iOS/Android), use the explicit IP address to ensure it works on real devices
+  return 'http://192.168.29.13:5001';
 }
 
 const BASE_URL = getBaseUrl();
@@ -61,5 +54,15 @@ export async function signup(
   });
 
   const data: AuthResponse = await res.json();
+  return data;
+}
+
+export async function getGoogleOAuthUrl(role: UserRole): Promise<{ success: boolean; url?: string; message?: string }> {
+  const res = await fetch(`${BASE_URL}/api/auth/oauth/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role }),
+  });
+  const data = await res.json();
   return data;
 }

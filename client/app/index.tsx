@@ -15,7 +15,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { login, UserRole } from '@/services/api';
+import { login, UserRole, getGoogleOAuthUrl } from '@/services/api';
+import * as WebBrowser from 'expo-web-browser';
 
 const { width, height } = Dimensions.get('window');
 
@@ -39,19 +40,19 @@ export default function LoginScreen() {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 800,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.spring(slideAnim, {
         toValue: 0,
         tension: 50,
         friction: 7,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.spring(logoScale, {
         toValue: 1,
         tension: 50,
         friction: 5,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
     ]).start();
 
@@ -61,12 +62,12 @@ export default function LoginScreen() {
         Animated.timing(glowAnim, {
           toValue: 1,
           duration: 2000,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(glowAnim, {
           toValue: 0,
           duration: 2000,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ])
     ).start();
@@ -84,6 +85,8 @@ export default function LoginScreen() {
       if (result.success) {
         if (role === 'customer') {
           router.push('/customer-dashboard');
+        } else if (role === 'owner') {
+          router.push('/owner-dashboard');
         } else {
           Alert.alert('Welcome! 💪', result.message);
         }
@@ -101,6 +104,31 @@ export default function LoginScreen() {
     inputRange: [0, 1],
     outputRange: [0.3, 0.8],
   });
+
+  const handleGoogleLogin = async () => {
+    try {
+      const resp = await getGoogleOAuthUrl(role);
+      if (!resp.success || !resp.url) {
+        Alert.alert('Google Sign-In Failed', resp.message || 'Unable to start Google OAuth.');
+        return;
+      }
+      const redirectUrl = 'client://oauth';
+      const result = await WebBrowser.openAuthSessionAsync(resp.url, redirectUrl);
+      if (result.type === 'success') {
+        if (role === 'customer') {
+          router.push('/customer-dashboard');
+        } else if (role === 'owner') {
+          router.push('/owner-dashboard');
+        } else {
+          Alert.alert('Welcome! 💪', `Signed in with Google as ${role}`);
+        }
+      } else {
+        Alert.alert('Cancelled', 'Google sign-in was cancelled.');
+      }
+    } catch (e: any) {
+      Alert.alert('Google Sign-In Error', e?.message || 'Unknown error');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -126,7 +154,7 @@ export default function LoginScreen() {
             <View style={styles.logoIcon}>
               <Ionicons name="barbell-outline" size={42} color="#d32f2f" />
             </View>
-            <Text style={styles.appName}>GYM DATA</Text>
+            <Text style={styles.appName}>Fitkart</Text>
             <Text style={styles.tagline}>Train Smart. Track Progress.</Text>
           </Animated.View>
 
@@ -251,9 +279,29 @@ export default function LoginScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
+          {/* Divider */}
+          <View style={{ alignItems: 'center', marginTop: 14, marginBottom: 8 }}>
+            <Text style={{ color: '#888' }}>OR</Text>
+          </View>
+
+          {/* Google Sign-In */}
+          <TouchableOpacity
+            style={[
+              styles.loginButton,
+              { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e0e0e0' },
+            ]}
+            onPress={handleGoogleLogin}
+            activeOpacity={0.8}
+          >
+            <View style={{ paddingVertical: 14, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 }}>
+              <Ionicons name="logo-google" size={20} color="#d32f2f" />
+              <Text style={{ color: '#d32f2f', fontSize: 16, fontWeight: '700' }}>Sign in with Google</Text>
+            </View>
+          </TouchableOpacity>
+
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
+            <Text style={styles.footerText}>Don’t have an account? </Text>
             <TouchableOpacity onPress={() => router.push('/signup')}>
               <Text style={styles.footerLink}>Sign Up</Text>
             </TouchableOpacity>

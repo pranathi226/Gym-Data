@@ -106,6 +106,73 @@ router.post("/signup", async (req, res) => {
     }
 });
 
+// OAuth: Get Google sign-in URL
+router.post("/oauth/google", async (req, res) => {
+    try {
+        const { role = "customer" } = req.body || {};
+        const callbackBase = process.env.SERVER_OAUTH_CALLBACK || `http://192.168.29.13:${process.env.PORT || 5001}/api/auth/oauth/callback/google`;
+        const redirectTo = `${callbackBase}?role=${encodeURIComponent(role)}`;
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: { redirectTo }
+        });
+        if (error) {
+            console.error("OAuth URL error:", error.message);
+            return res.status(400).json({ success: false, message: error.message });
+        }
+        res.json({ success: true, url: data.url });
+    } catch (error) {
+        console.error("OAuth URL generation error:", error.message);
+        res.status(500).json({ success: false, message: "Server error generating OAuth URL" });
+    }
+});
+
+// OAuth: Callback handler
+router.get("/oauth/callback/google", async (req, res) => {
+    try {
+        const { code, role = "customer" } = req.query;
+        if (!code) return res.status(400).send("Missing code");
+        const { data: sessionData, error: exchangeError } = await supabase.auth.exchangeCodeForSession({ code });
+        
+        const scheme = process.env.APP_SCHEME || 'client';
+        // Always try to redirect back to the app scheme on mobile, avoid trying to route to localhost web URLs
+        const baseRedirect = `${scheme}://oauth`;
+
+        if (exchangeError) {
+            console.error("OAuth exchange error:", exchangeError.message);
+            return res.redirect(`${baseRedirect}?status=error&message=${encodeURIComponent(exchangeError.message)}`);
+        }
+        const authedUser = sessionData.user;
+        const email = authedUser?.email;
+        const name = authedUser?.user_metadata?.name || email;
+        if (!email) {
+            return res.redirect(`${baseRedirect}?status=error&message=${encodeURIComponent("No email from provider")}`);
+        }
+        // Ensure existence in custom users table
+        const fakeHash = await bcrypt.hash("oauth-google", 10);
+        const { data: existingUser } = await supabase
+            .from("users")
+            .select("*")
+            .eq("email", email)
+            .eq("role", role)
+            .limit(1);
+        if (!existingUser || existingUser.length === 0) {
+            const { error: insertErr } = await supabase
+                .from("users")
+                .insert([{ id: authedUser.id, name, email, password: fakeHash, role }]);
+            if (insertErr) {
+                console.error("Insert OAuth user error:", insertErr.message);
+            }
+        }
+        return res.redirect(`${baseRedirect}?status=success&role=${encodeURIComponent(role)}`);
+    } catch (error) {
+        console.error("OAuth callback error:", error.message);
+        const scheme = process.env.APP_SCHEME || 'client';
+        const baseRedirect = `${scheme}://oauth`;
+        return res.redirect(`${baseRedirect}?status=error&message=${encodeURIComponent(error.message)}`);
+    }
+});
+
 // POST /api/auth/login
 router.post("/login", async (req, res) => {
     try {

@@ -42,13 +42,13 @@ export default function SignUpScreen() {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 800,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.spring(slideAnim, {
         toValue: 0,
         tension: 50,
         friction: 7,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
     ]).start();
   }, []);
@@ -68,8 +68,10 @@ export default function SignUpScreen() {
     try {
       const result = await signup(name.trim(), email.trim(), password, role);
       if (result.success) {
-        Alert.alert('Success! 🎉', result.message, [
-          { text: 'OK', onPress: () => router.push('/') }
+        // Since "Confirm email" is ON in Supabase, we shouldn't redirect to the dashboard yet.
+        // The user must verify their email first before they can log in.
+        Alert.alert('Verification Required 📧', result.message, [
+          { text: 'Go to Login', onPress: () => router.replace('/') }
         ]);
       } else {
         Alert.alert('Sign Up Failed', result.message);
