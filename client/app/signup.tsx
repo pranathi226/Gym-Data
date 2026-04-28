@@ -108,6 +108,15 @@ export default function SignUpScreen() {
               },
             ]}
           >
+            {/* Back Button */}
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="arrow-back" size={22} color="#333" />
+            </TouchableOpacity>
+
             {/* Header */}
             <View style={styles.headerContainer}>
               <Text style={styles.title}>Create Account</Text>
@@ -126,7 +135,7 @@ export default function SignUpScreen() {
                   onPress={() => setRole('owner')}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="business-outline" size={16} color={role === 'owner' ? '#d32f2f' : '#888'} />
+                  <Ionicons name="business" size={16} color={role === 'owner' ? '#E53935' : '#888'} />
                   <Text
                     style={[
                       styles.roleText,
@@ -140,12 +149,31 @@ export default function SignUpScreen() {
                 <TouchableOpacity
                   style={[
                     styles.roleButton,
+                    role === 'trainer' && styles.roleButtonActive,
+                  ]}
+                  onPress={() => setRole('trainer')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="medal" size={16} color={role === 'trainer' ? '#E53935' : '#888'} />
+                  <Text
+                    style={[
+                      styles.roleText,
+                      role === 'trainer' && styles.roleTextActive,
+                    ]}
+                  >
+                    Trainer
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
                     role === 'customer' && styles.roleButtonActive,
                   ]}
                   onPress={() => setRole('customer')}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="fitness-outline" size={16} color={role === 'customer' ? '#d32f2f' : '#888'} />
+                  <Ionicons name="fitness" size={16} color={role === 'customer' ? '#E53935' : '#888'} />
                   <Text
                     style={[
                       styles.roleText,
@@ -162,7 +190,7 @@ export default function SignUpScreen() {
             <View style={styles.inputContainer}>
               {/* Name Input */}
               <View style={styles.inputWrapper}>
-                <Ionicons name="person-outline" size={20} color="#d32f2f" style={styles.inputIcon} />
+                <Ionicons name="person-outline" size={20} color="#E53935" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Full Name"
@@ -175,7 +203,7 @@ export default function SignUpScreen() {
 
               {/* Email Input */}
               <View style={styles.inputWrapper}>
-                <Ionicons name="mail-outline" size={20} color="#d32f2f" style={styles.inputIcon} />
+                <Ionicons name="mail-outline" size={20} color="#E53935" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Email address"
@@ -190,7 +218,7 @@ export default function SignUpScreen() {
 
               {/* Password Input */}
               <View style={styles.inputWrapper}>
-                <Ionicons name="lock-closed-outline" size={20} color="#d32f2f" style={styles.inputIcon} />
+                <Ionicons name="lock-closed-outline" size={20} color="#E53935" style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
                   placeholder="Password"
@@ -203,13 +231,13 @@ export default function SignUpScreen() {
                   onPress={() => setShowPassword(!showPassword)}
                   style={styles.eyeButton}
                 >
-                  <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#d32f2f" />
+                  <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#E53935" />
                 </TouchableOpacity>
               </View>
 
               {/* Confirm Password Input */}
               <View style={styles.inputWrapper}>
-                <Ionicons name="shield-checkmark-outline" size={20} color="#d32f2f" style={styles.inputIcon} />
+                <Ionicons name="shield-checkmark-outline" size={20} color="#E53935" style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
                   placeholder="Confirm Password"
@@ -222,7 +250,7 @@ export default function SignUpScreen() {
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                   style={styles.eyeButton}
                 >
-                  <Ionicons name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#d32f2f" />
+                  <Ionicons name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#E53935" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -235,7 +263,7 @@ export default function SignUpScreen() {
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={['#ff4b4b', '#d32f2f']}
+                colors={['#FF5252', '#E53935', '#C62828']}
                 style={styles.signupGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
@@ -269,25 +297,34 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   circle1: {
     position: 'absolute',
-    width: 350,
-    height: 350,
-    borderRadius: 175,
-    backgroundColor: '#ff4b4b',
-    top: -120,
-    right: -100,
-    opacity: 0.1,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: '#E53935',
+    top: -100,
+    right: -80,
+    opacity: 0.06,
   },
   circle2: {
     position: 'absolute',
-    width: 250,
-    height: 250,
-    borderRadius: 125,
-    backgroundColor: '#d32f2f',
-    bottom: -80,
-    left: -80,
-    opacity: 0.1,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: '#E53935',
+    bottom: -60,
+    left: -60,
+    opacity: 0.05,
   },
   keyboardView: {
     flex: 1,
@@ -306,8 +343,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 34,
-    fontWeight: '800',
-    color: '#333333',
+    fontWeight: '900',
+    color: '#1A1A2E',
     marginBottom: 8,
   },
   subtitle: {
@@ -342,8 +379,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   roleButtonActive: {
-    backgroundColor: '#fff5f5',
-    borderColor: '#d32f2f',
+    backgroundColor: '#FFFAFA',
+    borderColor: '#E53935',
   },
   roleText: {
     fontSize: 13,
@@ -351,7 +388,7 @@ const styles = StyleSheet.create({
     color: '#888',
   },
   roleTextActive: {
-    color: '#d32f2f',
+    color: '#E53935',
   },
   inputContainer: {
     gap: 16,
@@ -360,10 +397,10 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    backgroundColor: '#F8F8F8',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#EEEEEE',
     paddingHorizontal: 16,
     height: 58,
   },
@@ -383,10 +420,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden',
     elevation: 4,
-    shadowColor: '#d32f2f',
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: '#E53935',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: 12,
   },
   signupButtonDisabled: {
     opacity: 0.7,
@@ -398,7 +435,7 @@ const styles = StyleSheet.create({
   },
   signupButtonText: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -412,7 +449,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   footerLink: {
-    color: '#d32f2f',
+    color: '#E53935',
     fontSize: 15,
     fontWeight: '700',
   },

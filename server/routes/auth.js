@@ -106,20 +106,25 @@ router.post("/signup", async (req, res) => {
     }
 });
 
-// OAuth: Get Google sign-in URL
+// In-memory store for pending OAuth sessions
+let pendingOAuth = {};
+
+// OAuth: Get Google sign-in URL (redirects directly to app with implicit flow)
 router.post("/oauth/google", async (req, res) => {
     try {
-        const { role = "customer" } = req.body || {};
-        const callbackBase = process.env.SERVER_OAUTH_CALLBACK || `http://192.168.29.13:${process.env.PORT || 5001}/api/auth/oauth/callback/google`;
-        const redirectTo = `${callbackBase}?role=${encodeURIComponent(role)}`;
+        const { role = "customer", redirectUrl } = req.body || {};
+        // Redirect directly to the app — Supabase sends tokens in hash fragment
+        const redirectTo = redirectUrl || 'client://oauth';
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: "google",
-            options: { redirectTo }
+            options: { redirectTo, skipBrowserRedirect: true }
         });
         if (error) {
             console.error("OAuth URL error:", error.message);
             return res.status(400).json({ success: false, message: error.message });
         }
+        pendingOAuth = { role };
+        console.log("OAuth redirect URL:", redirectTo);
         res.json({ success: true, url: data.url });
     } catch (error) {
         console.error("OAuth URL generation error:", error.message);
@@ -127,29 +132,62 @@ router.post("/oauth/google", async (req, res) => {
     }
 });
 
-// OAuth: Callback handler
+// OAuth: Server callback — exchanges code, creates user, redirects to app
 router.get("/oauth/callback/google", async (req, res) => {
+    const { clientRedirectUrl, role } = pendingOAuth;
+    const appRedirect = clientRedirectUrl || 'client://oauth';
     try {
-        const { code, role = "customer" } = req.query;
-        if (!code) return res.status(400).send("Missing code");
-        const { data: sessionData, error: exchangeError } = await supabase.auth.exchangeCodeForSession({ code });
-        
-        const scheme = process.env.APP_SCHEME || 'client';
-        // Always try to redirect back to the app scheme on mobile, avoid trying to route to localhost web URLs
-        const baseRedirect = `${scheme}://oauth`;
-
+        const code = req.query.code;
+        if (!code) {
+            console.error("OAuth callback: no code in query params. Query:", req.query);
+            return res.redirect(`${appRedirect}?status=error&message=${encodeURIComponent("Missing authorization code")}`);
+        }
+        const { data: sessionData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         if (exchangeError) {
             console.error("OAuth exchange error:", exchangeError.message);
-            return res.redirect(`${baseRedirect}?status=error&message=${encodeURIComponent(exchangeError.message)}`);
+            return res.redirect(`${appRedirect}?status=error&message=${encodeURIComponent(exchangeError.message)}`);
         }
         const authedUser = sessionData.user;
         const email = authedUser?.email;
-        const name = authedUser?.user_metadata?.name || email;
+        const name = authedUser?.user_metadata?.full_name || authedUser?.user_metadata?.name || email;
         if (!email) {
-            return res.redirect(`${baseRedirect}?status=error&message=${encodeURIComponent("No email from provider")}`);
+            return res.redirect(`${appRedirect}?status=error&message=${encodeURIComponent("No email from provider")}`);
         }
-        // Ensure existence in custom users table
-        const fakeHash = await bcrypt.hash("oauth-google", 10);
+        // Ensure user exists in custom users table
+        const { data: existingUser } = await supabase
+            .from("users")
+            .select("*")
+            .eq("email", email)
+            .eq("role", role || "customer")
+            .limit(1);
+        if (!existingUser || existingUser.length === 0) {
+            const fakeHash = await bcrypt.hash("oauth-google", 10);
+            await supabase.from("users").insert([{
+                id: authedUser.id, name, email, password: fakeHash, role: role || "customer"
+            }]);
+        }
+        console.log("OAuth success! Redirecting to:", appRedirect);
+        return res.redirect(`${appRedirect}?status=success&role=${encodeURIComponent(role || "customer")}`);
+    } catch (error) {
+        console.error("OAuth callback error:", error.message);
+        return res.redirect(`${appRedirect}?status=error&message=${encodeURIComponent(error.message)}`);
+    }
+});
+
+// OAuth: Verify access token and create/find user in custom table
+router.post("/oauth/verify", async (req, res) => {
+    try {
+        const { access_token, role = "customer" } = req.body;
+        if (!access_token) {
+            return res.status(400).json({ success: false, message: "Missing access token" });
+        }
+        const { data: { user }, error } = await supabase.auth.getUser(access_token);
+        if (error || !user) {
+            console.error("OAuth verify error:", error?.message);
+            return res.status(401).json({ success: false, message: "Invalid or expired token" });
+        }
+        const email = user.email;
+        const name = user.user_metadata?.full_name || user.user_metadata?.name || email;
         const { data: existingUser } = await supabase
             .from("users")
             .select("*")
@@ -157,19 +195,20 @@ router.get("/oauth/callback/google", async (req, res) => {
             .eq("role", role)
             .limit(1);
         if (!existingUser || existingUser.length === 0) {
-            const { error: insertErr } = await supabase
-                .from("users")
-                .insert([{ id: authedUser.id, name, email, password: fakeHash, role }]);
-            if (insertErr) {
-                console.error("Insert OAuth user error:", insertErr.message);
-            }
+            const fakeHash = await bcrypt.hash("oauth-google", 10);
+            await supabase.from("users").insert([{
+                id: user.id, name, email, password: fakeHash, role
+            }]);
         }
-        return res.redirect(`${baseRedirect}?status=success&role=${encodeURIComponent(role)}`);
+        const userData = (existingUser && existingUser.length > 0) ? existingUser[0] : { id: user.id, email, role, name };
+        res.json({
+            success: true,
+            message: "Google sign-in successful! 💪",
+            user: { id: userData.id, email: userData.email, role: userData.role, name: userData.name },
+        });
     } catch (error) {
-        console.error("OAuth callback error:", error.message);
-        const scheme = process.env.APP_SCHEME || 'client';
-        const baseRedirect = `${scheme}://oauth`;
-        return res.redirect(`${baseRedirect}?status=error&message=${encodeURIComponent(error.message)}`);
+        console.error("OAuth verify error:", error.message);
+        res.status(500).json({ success: false, message: "Server error verifying OAuth token" });
     }
 });
 

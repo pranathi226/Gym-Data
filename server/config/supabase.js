@@ -9,7 +9,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
     process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+        flowType: 'implicit',
+        persistSession: false,
+        detectSessionInUrl: false,
+        autoRefreshToken: false,
+    }
+});
 
 console.log("✅ Supabase client initialized");
 

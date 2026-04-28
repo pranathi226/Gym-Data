@@ -2,12 +2,9 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 function getBaseUrl(): string {
-  // On web, localhost works fine
   if (Platform.OS === 'web') {
     return 'http://localhost:5001';
   }
-
-  // On mobile (iOS/Android), use the explicit IP address to ensure it works on real devices
   return 'http://192.168.29.13:5001';
 }
 
@@ -57,12 +54,22 @@ export async function signup(
   return data;
 }
 
-export async function getGoogleOAuthUrl(role: UserRole): Promise<{ success: boolean; url?: string; message?: string }> {
+export async function getGoogleOAuthUrl(role: UserRole, redirectUrl: string): Promise<{ success: boolean; url?: string; message?: string }> {
   const res = await fetch(`${BASE_URL}/api/auth/oauth/google`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ role }),
+    body: JSON.stringify({ role, redirectUrl }),
   });
   const data = await res.json();
+  return data;
+}
+
+export async function verifyOAuthToken(accessToken: string, role: UserRole): Promise<AuthResponse> {
+  const res = await fetch(`${BASE_URL}/api/auth/oauth/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ access_token: accessToken, role }),
+  });
+  const data: AuthResponse = await res.json();
   return data;
 }
